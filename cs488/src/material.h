@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.h"
+#include "random.h"
 
 // ====== implement it in A2, if you want ======
 enum enumMaterialType {
@@ -67,12 +68,15 @@ public:
 		return brdfValue;
 	};
 
-	float PDF(const float3& wGiven, const float3& wSample) const {
+	float PDF(const float3& wGiven, const float3& wSample, const float3& n) const {
 		// probability density function for a given direction and a given sample
 		// it has to be consistent with the sampler
 		float pdfValue = 0.0f;
 		if (type == MAT_LAMBERTIAN) {
-			// empty
+			float3 normal = normalize(n);
+			float3 sample = normalize(wSample);
+			float cosTheta = dot(normal, sample);
+			pdfValue = cosTheta > 0.0f ? cosTheta / PI : 0.0f;
 		} else if (type == MAT_METAL) {
 			// empty
 		} else if (type == MAT_GLASS) {
@@ -81,20 +85,34 @@ public:
 		return pdfValue;
 	}
 
-	float3 sampler(const float3& wGiven, float& pdfValue) const {
+	float3 sampler(const float3& wGiven, const float3& n, float& pdfValue) const {
 		// sample a vector and record its probability density as pdfValue
 		float3 smp = float3(0.0f);
 		if (type == MAT_LAMBERTIAN) {
-			// empty
+			float u1 = PCG32::rand();
+			float u2 = PCG32::rand();
+
+			float r = sqrtf(u1);
+			float phi = 2.0f * PI * u2;
+
+			float x = r * cosf(phi);
+			float y = r * sinf(phi);
+			float z = sqrtf(std::max(0.0f, 1.0f - u1));
+
+			float3 normal = normalize(n);
+			float3 helper = fabsf(normal.x) > 0.9f ? float3(0, 1, 0) : float3(1, 0, 0);
+			float3 tangent = normalize(cross(helper, normal));
+			float3 bitangent = cross(normal, tangent);
+
+			smp = normalize(x * tangent + y * bitangent + z * normal);
 		} else if (type == MAT_METAL) {
 			// empty
 		} else if (type == MAT_GLASS) {
 			// empty
 		}
 
-		pdfValue = PDF(wGiven, smp);
+		pdfValue = PDF(wGiven, smp, n);
 		return smp;
 	}
 };
-
 

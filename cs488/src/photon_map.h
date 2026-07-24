@@ -73,7 +73,7 @@ class PhotonMap {
     since we will use a global reference radius and reduce it in each iteration.*/
 
     // Returns all photons in accumulate within the radius around the point
-    void search(int nodeId, const float3 &point, float r, std::vector<int> &accumulate) {
+    void search(int nodeId, const float3 &point, float r, std::vector<int> &accumulate) const {
         if (nodeId == -1) return;
         const Node &node = nodes[nodeId];
         int photonIdx = node.index;
@@ -115,6 +115,15 @@ class PhotonMap {
             indices[i] = i;
         }
         root = this->balance(indices, 0, (int) indices.size());
+    }
+
+    std::vector<int> rangeSearch(const float3 &point, float radius) const {
+        std::vector<int> res;
+        if (this->photons == nullptr || this->root == -1) {
+            return res;
+        }
+        this->search(this->root, point, radius, res);
+        return res;
     }
 
 
