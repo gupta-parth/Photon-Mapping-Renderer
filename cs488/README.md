@@ -4,8 +4,9 @@
 No additional measures need to be taken to compile and run the project. 
 
 # Specification
-For task 1: I used Verlet integration to update the positition and the velocity. The new velocity is computed 
-as (newPosition - oldPosition) / deltaT. 
+
+## Photon map
+The photon map is created as a KD tree. 
 
 For task 2: I used the position based approach where I reflected the old position about the axis at the new 
 position and moved them both according to where the wall is (in this case the bounding box). I also added a

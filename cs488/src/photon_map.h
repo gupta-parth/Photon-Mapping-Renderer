@@ -69,6 +69,31 @@ class PhotonMap {
         return nodeIdx;
     }
 
+    /*We only care about finding photons within a certain search radius
+    since we will use a global reference radius and reduce it in each iteration.*/
+
+    // Returns all photons in accumulate within the radius around the point
+    void search(int nodeId, const float3 &point, float r, std::vector<int> &accumulate) {
+        if (nodeId == -1) return;
+        const Node &node = nodes[nodeId];
+        int photonIdx = node.index;
+        float3 photonPosition = (*photons)[photonIdx].position;
+        float dist2 = linalg::distance2(photonPosition, point);
+        if (dist2 < r * r) {
+            accumulate.push_back(photonIdx);
+        }
+        
+        // We check if the points lies within the right or left subtree of the node
+        if (point[node.dimension] < photonPosition[node.dimension]) {
+            search(node.leftChild, point, r, accumulate);
+        }
+        else {
+            search(node.rightChild, point, r, accumulate);
+        }
+    }
+
+
+
   public:
     void setPhotons(const std::vector<Photon> &photons) {
         this->photons = &photons;
@@ -84,8 +109,9 @@ class PhotonMap {
     }
 
 
-    // For DEBUG/TESTING purposes 
 
+
+    // For DEBUG/TESTING purposes 
     int getRoot() const {
         return root;
     }

@@ -10,6 +10,19 @@ Photon makePhoton(float x, float y, float z) {
     return photon;
 }
 
+/*
+I implemented all the helper functions with the help of Codex. The test case 
+was handwritten by me. The exact query that was used to generate the code was:
+
+I want to create a new file called test_photon_map under tests/ and in that file I
+want to design a test case with 10 photons to make sure that the PhotonMap is building
+correctly and the photons are in the right split. Here are the 10 photons that I want to use:
+....
+Use helper functions to check the nodes are in the correct split as the Photon map is implemented
+as a kdtree. 
+*/
+
+
 std::vector<Photon> makeTenPhotons() {
     std::vector<Photon> photons;
 
