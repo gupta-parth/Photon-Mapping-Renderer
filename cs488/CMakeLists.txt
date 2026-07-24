@@ -16,3 +16,10 @@ add_executable(CS488
 target_include_directories(CS488 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include)
 target_include_directories(CS488 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glew/include)
 target_link_libraries(CS488 glfw libglew_static)
+
+add_executable(test_photon_map
+        tests/test_photon_map.cpp)
+
+target_include_directories(test_photon_map PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(test_photon_map PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include)
+target_include_directories(test_photon_map PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glew/include)

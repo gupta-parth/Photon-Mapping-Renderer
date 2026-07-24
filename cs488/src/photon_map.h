@@ -83,4 +83,31 @@ class PhotonMap {
         root = this->balance(indices, 0, (int) indices.size());
     }
 
+
+    // For DEBUG/TESTING purposes 
+
+    int getRoot() const {
+        return root;
+    }
+
+    int getNodeCount() const {
+        return (int)nodes.size();
+    }
+
+    int getNodePhotonIndex(int nodeIdx) const {
+        return nodes[nodeIdx].index;
+    }
+
+    int getNodeLeftChild(int nodeIdx) const {
+        return nodes[nodeIdx].leftChild;
+    }
+
+    int getNodeRightChild(int nodeIdx) const {
+        return nodes[nodeIdx].rightChild;
+    }
+
+    int getNodeDimension(int nodeIdx) const {
+        return nodes[nodeIdx].dimension;
+    }
+
 };

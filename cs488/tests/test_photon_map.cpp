@@ -1,0 +1,201 @@
+#include "photon_map.h"
+
+#include <assert.h>
+
+Photon makePhoton(float x, float y, float z) {
+    Photon photon;
+    photon.flux = float3(1.0f);
+    photon.position = float3(x, y, z);
+    photon.wi = float3(0.0f, 1.0f, 0.0f);
+    return photon;
+}
+
+std::vector<Photon> makeTenPhotons() {
+    std::vector<Photon> photons;
+
+    photons.push_back(makePhoton(0.0f, 0.0f, 0.0f));
+    photons.push_back(makePhoton(1.0f, 2.0f, 0.0f));
+    photons.push_back(makePhoton(2.0f, 4.0f, 0.0f));
+    photons.push_back(makePhoton(3.0f, 6.0f, 0.0f));
+    photons.push_back(makePhoton(4.0f, 8.0f, 0.0f));
+    photons.push_back(makePhoton(5.0f, 0.0f, 0.0f));
+    photons.push_back(makePhoton(6.0f, 0.0f, 0.0f));
+    photons.push_back(makePhoton(7.0f, 0.0f, 2.0f));
+    photons.push_back(makePhoton(8.0f, 0.0f, 5.0f));
+    photons.push_back(makePhoton(9.0f, 0.0f, 8.0f));
+
+    return photons;
+}
+
+float getPhotonPositionValue(const std::vector<Photon>& photons, int photonIndex, int dimension) {
+    return photons[photonIndex].position[dimension];
+}
+
+char getAxisName(int dimension) {
+    if (dimension == 0) {
+        return 'x';
+    }
+    if (dimension == 1) {
+        return 'y';
+    }
+    return 'z';
+}
+
+void printIndent(int depth) {
+    for (int i = 0; i < depth; i++) {
+        std::cout << "  ";
+    }
+}
+
+void printPhotonInfo(
+    const PhotonMap& map,
+    const std::vector<Photon>& photons,
+    int nodeIdx,
+    const char* label,
+    int depth) {
+    int photonIndex = map.getNodePhotonIndex(nodeIdx);
+    int dimension = map.getNodeDimension(nodeIdx);
+    const float3& position = photons[photonIndex].position;
+
+    printIndent(depth);
+    std::cout << label
+              << " node=" << nodeIdx
+              << " photon=" << photonIndex
+              << " split=" << getAxisName(dimension)
+              << " position=(" << position.x << ", " << position.y << ", " << position.z << ")"
+              << std::endl;
+}
+
+void printKdTree(
+    const PhotonMap& map,
+    const std::vector<Photon>& photons,
+    int nodeIdx,
+    const char* label,
+    int depth) {
+    if (nodeIdx == -1) {
+        return;
+    }
+
+    printPhotonInfo(map, photons, nodeIdx, label, depth);
+
+    printKdTree(map, photons, map.getNodeLeftChild(nodeIdx), "L", depth + 1);
+    printKdTree(map, photons, map.getNodeRightChild(nodeIdx), "R", depth + 1);
+}
+
+void checkChildIndicesAreValid(const PhotonMap& map) {
+    int nodeCount = map.getNodeCount();
+
+    for (int i = 0; i < nodeCount; i++) {
+        int leftChild = map.getNodeLeftChild(i);
+        int rightChild = map.getNodeRightChild(i);
+
+        assert(leftChild == -1 || (leftChild >= 0 && leftChild < nodeCount));
+        assert(rightChild == -1 || (rightChild >= 0 && rightChild < nodeCount));
+    }
+}
+
+void checkEveryPhotonAppearsOnce(const PhotonMap& map, int photonCount) {
+    std::vector<int> timesSeen(photonCount);
+
+    for (int i = 0; i < map.getNodeCount(); i++) {
+        int photonIndex = map.getNodePhotonIndex(i);
+        assert(photonIndex >= 0);
+        assert(photonIndex < photonCount);
+        timesSeen[photonIndex] = timesSeen[photonIndex] + 1;
+    }
+
+    for (int i = 0; i < photonCount; i++) {
+        assert(timesSeen[i] == 1);
+    }
+}
+
+void checkSubtreeLessOrEqual(
+    const PhotonMap& map,
+    const std::vector<Photon>& photons,
+    int nodeIdx,
+    int dimension,
+    float splitValue) {
+    if (nodeIdx == -1) {
+        return;
+    }
+
+    int photonIndex = map.getNodePhotonIndex(nodeIdx);
+    float value = getPhotonPositionValue(photons, photonIndex, dimension);
+    assert(value <= splitValue);
+
+    checkSubtreeLessOrEqual(map, photons, map.getNodeLeftChild(nodeIdx), dimension, splitValue);
+    checkSubtreeLessOrEqual(map, photons, map.getNodeRightChild(nodeIdx), dimension, splitValue);
+}
+
+void checkSubtreeGreaterOrEqual(
+    const PhotonMap& map,
+    const std::vector<Photon>& photons,
+    int nodeIdx,
+    int dimension,
+    float splitValue) {
+    if (nodeIdx == -1) {
+        return;
+    }
+
+    int photonIndex = map.getNodePhotonIndex(nodeIdx);
+    float value = getPhotonPositionValue(photons, photonIndex, dimension);
+    assert(value >= splitValue);
+
+    checkSubtreeGreaterOrEqual(map, photons, map.getNodeLeftChild(nodeIdx), dimension, splitValue);
+    checkSubtreeGreaterOrEqual(map, photons, map.getNodeRightChild(nodeIdx), dimension, splitValue);
+}
+
+void checkKdTreeSplits(const PhotonMap& map, const std::vector<Photon>& photons, int nodeIdx) {
+    if (nodeIdx == -1) {
+        return;
+    }
+
+    int photonIndex = map.getNodePhotonIndex(nodeIdx);
+    int dimension = map.getNodeDimension(nodeIdx);
+    float splitValue = getPhotonPositionValue(photons, photonIndex, dimension);
+
+    checkSubtreeLessOrEqual(map, photons, map.getNodeLeftChild(nodeIdx), dimension, splitValue);
+    checkSubtreeGreaterOrEqual(map, photons, map.getNodeRightChild(nodeIdx), dimension, splitValue);
+
+    checkKdTreeSplits(map, photons, map.getNodeLeftChild(nodeIdx));
+    checkKdTreeSplits(map, photons, map.getNodeRightChild(nodeIdx));
+}
+
+void checkExpectedTopSplits(const PhotonMap& map) {
+    int root = map.getRoot();
+    int leftChild = map.getNodeLeftChild(root);
+    int rightChild = map.getNodeRightChild(root);
+
+    assert(map.getNodePhotonIndex(root) == 5);
+    assert(map.getNodeDimension(root) == 0);
+
+    assert(leftChild != -1);
+    assert(map.getNodePhotonIndex(leftChild) == 2);
+    assert(map.getNodeDimension(leftChild) == 1);
+
+    assert(rightChild != -1);
+    assert(map.getNodePhotonIndex(rightChild) == 8);
+    assert(map.getNodeDimension(rightChild) == 2);
+}
+
+int main() {
+    std::vector<Photon> photons = makeTenPhotons();
+
+    PhotonMap map;
+    map.setPhotons(photons);
+    map.buildTree();
+
+    std::cout << "KD tree:" << std::endl;
+    printKdTree(map, photons, map.getRoot(), "root", 0);
+
+    assert(map.getRoot() != -1);
+    assert(map.getNodeCount() == 10);
+
+    checkChildIndicesAreValid(map);
+    checkEveryPhotonAppearsOnce(map, (int)photons.size());
+    checkExpectedTopSplits(map);
+    checkKdTreeSplits(map, photons, map.getRoot());
+
+    std::cout << "test_photon_map passed" << std::endl;
+    return 0;
+}
