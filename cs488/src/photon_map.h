@@ -83,12 +83,21 @@ class PhotonMap {
             accumulate.push_back(photonIdx);
         }
         
-        // We check if the points lies within the right or left subtree of the node
-        if (point[node.dimension] < photonPosition[node.dimension]) {
+        // We have to search the side where the query point lies and 
+        // we also check if the sphere with radius r crosses the splitting plane
+        int axis = node.dimension;
+        float axisDist = point[axis] - photonPosition[axis];
+        if (axisDist < 0.0f) {
             search(node.leftChild, point, r, accumulate);
+            if (axisDist * axisDist <= r * r) {
+                search(node.rightChild, point, r, accumulate);
+            }
         }
         else {
             search(node.rightChild, point, r, accumulate);
+            if (axisDist * axisDist <= r * r) {
+                search(node.leftChild, point, r, accumulate);
+            }
         }
     }
 
