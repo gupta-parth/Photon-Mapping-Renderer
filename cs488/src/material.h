@@ -87,6 +87,9 @@ public:
 
 	float3 sampler(const float3& wGiven, const float3& n, float& pdfValue) const {
 		// sample a vector and record its probability density as pdfValue
+
+		// we use cosine weighted importance sampling for Lambertian because it will be useful for 
+		// area lights later on
 		float3 smp = float3(0.0f);
 		if (type == MAT_LAMBERTIAN) {
 			float u1 = PCG32::rand();
