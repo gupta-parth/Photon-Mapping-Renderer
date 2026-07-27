@@ -74,7 +74,7 @@ public:
 		result.P = tri.positions[0]*(1-beta-gamma) + tri.positions[1]*beta + tri.positions[2]*gamma;
 		result.T = tri.texcoords[0]*(1-beta-gamma) + tri.texcoords[1]*beta + tri.texcoords[2]*gamma;
 		result.N = normalize(tri.normals[0]*(1-beta-gamma) + tri.normals[1]*beta + tri.normals[2]*gamma);
-		result.surfaceNormal = normalize(cross(tri.positions[1] - tri.positions[0], tri.positions[2] - tri.positions[0]));
+		result.geometricNormal = normalize(cross(tri.positions[1] - tri.positions[0], tri.positions[2] - tri.positions[0]));
 		return true;
 	}
 

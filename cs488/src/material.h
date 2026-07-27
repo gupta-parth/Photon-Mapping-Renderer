@@ -61,7 +61,11 @@ public:
 			// BRDF
 			brdfValue = Kd / PI;
 		} else if (type == MAT_METAL) {
-			// empty
+			float3 normal = normalize(n);
+			float3 incident = normalize(wi);
+			float cosTheta = abs(dot(normal,incident));
+			if (cosTheta <= 1e-6f) return float3(0.0f);
+			brdfValue = Ks / cosTheta; 
 		} else if (type == MAT_GLASS) {
 			// empty
 		}
@@ -78,7 +82,7 @@ public:
 			float cosTheta = dot(normal, sample);
 			pdfValue = cosTheta > 0.0f ? cosTheta / PI : 0.0f;
 		} else if (type == MAT_METAL) {
-			// empty
+			pdfValue = 1.0f;
 		} else if (type == MAT_GLASS) {
 			// empty
 		}
@@ -109,7 +113,8 @@ public:
 
 			smp = normalize(x * tangent + y * bitangent + z * normal);
 		} else if (type == MAT_METAL) {
-			// empty
+			float3 normal = normalize(n);
+			smp = normalize(-2 * dot(-wGiven, normal) * normal - wGiven);
 		} else if (type == MAT_GLASS) {
 			// empty
 		}

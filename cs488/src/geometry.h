@@ -26,7 +26,7 @@ public:
 	float3 P; // location
 	float3 N; // shading normal vector
 	float2 T; // texture coordinate
-	float3 surfaceNormal;
+	float3 geometricNormal;
 	const Material* material; // const pointer to the material of the intersected object
 };
 

@@ -28,7 +28,7 @@ static float3 shade(const HitInfo& hit, const float3& viewDir, const int level) 
 			// normalize the light direction
 			l /= sqrtf(falloff);
 
-			const Ray shadowRay = Ray(float3(hit.P + hit.surfaceNormal * Epsilon), l);
+			const Ray shadowRay = Ray(float3(hit.P + hit.geometricNormal * Epsilon), l);
 			HitInfo shadowHitInfo;
 			if (globalScene.intersect(shadowHitInfo, shadowRay, 0.00001, sqrtf(falloff)))
 				inShadow = true;
@@ -49,7 +49,7 @@ static float3 shade(const HitInfo& hit, const float3& viewDir, const int level) 
 	}
 	else if (hit.material->type == MAT_METAL) {
 		float3 reflectedDir = normalize(-2 * dot(-viewDir, hit.N) * hit.N  - viewDir);
-		Ray reflectedRay = Ray(hit.P + hit.surfaceNormal * Epsilon, reflectedDir);
+		Ray reflectedRay = Ray(hit.P + hit.geometricNormal * Epsilon, reflectedDir);
 		HitInfo reflectedHitInfo;
 		if (globalScene.intersect(reflectedHitInfo, reflectedRay, 0.00001)) {
 			return 0.9f * shade(reflectedHitInfo, -reflectedDir, level + 1);
@@ -76,7 +76,7 @@ static float3 shade(const HitInfo& hit, const float3& viewDir, const int level) 
 		if (temp < 0.0f) {
 			// total internal reflection
 			float3 reflectedDir = normalize(-2 * dot(-viewDir, N) * N - viewDir);
-			Ray reflectedRay = Ray(hit.P + hit.surfaceNormal * Epsilon, reflectedDir);
+			Ray reflectedRay = Ray(hit.P + hit.geometricNormal * Epsilon, reflectedDir);
 			HitInfo reflectedHitInfo;
 			if (globalScene.intersect(reflectedHitInfo, reflectedRay, 0.00001)) {
 				return shade(reflectedHitInfo, -reflectedDir, level + 1);
@@ -86,8 +86,8 @@ static float3 shade(const HitInfo& hit, const float3& viewDir, const int level) 
 		}
 
 		float3 refractDir = normalize(etaRatio * I + (etaRatio * NdotI - sqrtf(temp)) * N);
-		Ray refractedRay = Ray(hit.P + (dot(refractDir, hit.surfaceNormal) > 0.0f ? hit.surfaceNormal
-			: -hit.surfaceNormal) * Epsilon, refractDir);
+		Ray refractedRay = Ray(hit.P + (dot(refractDir, hit.geometricNormal) > 0.0f ? hit.geometricNormal
+			: -hit.geometricNormal * Epsilon), refractDir);
 		HitInfo refractedHitInfo;
 		if (globalScene.intersect(refractedHitInfo, refractedRay, 0.00001)) {
 			return shade(refractedHitInfo, -refractDir, level + 1);

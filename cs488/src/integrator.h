@@ -6,8 +6,6 @@
 #include "photon_map.h"
 
 
-// TODO: I need to move the Ray tracing code from scene.h in the integrator
-
 class Integrator {
 private:
     PhotonMap photonMap; 
@@ -16,7 +14,8 @@ private:
     int numPhotons;
     int depth;
     int iterations;
-    float globalRadius;                      
+    float radius;
+    const float alpha;         
 
     void tracePhotons(Scene &scene, int seed) {
         /*
@@ -61,13 +60,12 @@ public:
             int seed;
             tracePhotons(scene, seed);
             
-
             // Ray tracing pass now (lines 5 - 13 in Fig 3 in the paper)
             for (int j = 0; j < globalHeight; ++j) {
                 for (int i = 0; i < globalWidth; ++i) {
-                    const Ray ray = scene.eyeRay(i, j);
+                    Ray ray = scene.eyeRay(i, j);
                     float3 weight = float3(1.0f, 1.0f, 1.0f);        // W in the paper. I use beta described in PBRT implementation 
-                    float3 radiance;
+                    float3 radiance = float3(0.0f, 0.0f, 0.0f);
 
                     // We trace until diffuse surface is hit
                     for (int k = 0; k < depth; k++) {
@@ -75,25 +73,27 @@ public:
                         if (scene.intersect(hitInfo, ray)) {
                             if (hitInfo.material->type == MAT_LAMBERTIAN) {
                                 radiance = weight * getRadiance(-ray.d, hitInfo);
+                                break;
                             }
                             // Specular 
                             else if (hitInfo.material->type == MAT_GLASS || hitInfo.material->type == MAT_METAL) {
                                 // Need to generate a new ray here using brdf
-                                
+                                float pdf_new;
+                                float3 dir = hitInfo.material->sampler(-ray.d, hitInfo.N, pdf_new);
+                                float3 f = hitInfo.material->BRDF(dir, -ray.d, hitInfo.N);
+                                weight *= (f * abs(dot(dir, hitInfo.N))) / pdf_new; 
+                                ray = Ray(hitInfo.P + hitInfo.geometricNormal * Epsilon, dir);       
                             }
                             else {
                                 break;
                             }
                         }
+                        else break;
                     }
+                    image.pixel(i,j) += radiance;
                 }
             }
-
+            radius = sqrtf((x + alpha) / (x+1)) * radius;
         }
-
-
-
-
     }
-
 };
