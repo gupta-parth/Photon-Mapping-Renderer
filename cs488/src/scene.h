@@ -1,7 +1,6 @@
 #pragma once
 
 #include "bvh.h"
-#include "environment.h"
 #include "globals.h"
 #include "image.h"
 #include "mesh.h"
@@ -109,14 +108,9 @@ public:
 				if (intersect(hitInfo, ray)) {
 					FrameBuffer.pixel(i, j) = shade(hitInfo, -ray.d);
 				} else {
-					if (globalEnvironmentMap.isLoaded) {
-						FrameBuffer.pixel(i, j) = globalEnvironmentMap.fetch(&ray);
-					}
-					else {
-						FrameBuffer.pixel(i,j) = float3(0.0f); // background color
-					}
-
+					FrameBuffer.pixel(i,j) = float3(0.0f); // background color
 				}
+
 			}
 
 			// show intermediate process

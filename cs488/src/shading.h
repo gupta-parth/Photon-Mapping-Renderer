@@ -1,6 +1,6 @@
 #pragma once
 
-#include "environment.h"
+
 #include "scene.h"
 
 // fill in the missing parts
@@ -54,12 +54,7 @@ static float3 shade(const HitInfo& hit, const float3& viewDir, const int level) 
 		if (globalScene.intersect(reflectedHitInfo, reflectedRay, 0.00001)) {
 			return 0.9f * shade(reflectedHitInfo, -reflectedDir, level + 1);
 		} else {
-			if (globalEnvironmentMap.isLoaded) {
-				return globalEnvironmentMap.fetch(&reflectedRay);
-			}
-			else {
-				return float3(0.0f);
-			}
+			return float3(0.0f);
 		}
 	return hit.material->Kd;
 
@@ -86,12 +81,7 @@ static float3 shade(const HitInfo& hit, const float3& viewDir, const int level) 
 			if (globalScene.intersect(reflectedHitInfo, reflectedRay, 0.00001)) {
 				return shade(reflectedHitInfo, -reflectedDir, level + 1);
 			} else {
-				if (globalEnvironmentMap.isLoaded) {
-					return globalEnvironmentMap.fetch(&reflectedRay);
-				}
-				else {
-					return float3(0.0f);
-				}
+				return float3(0.0f);
 			}
 		}
 
@@ -101,9 +91,6 @@ static float3 shade(const HitInfo& hit, const float3& viewDir, const int level) 
 		HitInfo refractedHitInfo;
 		if (globalScene.intersect(refractedHitInfo, refractedRay, 0.00001)) {
 			return shade(refractedHitInfo, -refractDir, level + 1);
-		}
-		else if (globalEnvironmentMap.isLoaded) {
-			return globalEnvironmentMap.fetch(&refractedRay);
 		}
 		else {
 			return float3(0.0f);

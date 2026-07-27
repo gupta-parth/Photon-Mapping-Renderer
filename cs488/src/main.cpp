@@ -38,7 +38,6 @@ int main(int argc, const char* argv[]) {
     setupLightSource();
 
     globalScene.preCalc();
-	globalEnvironmentMap.load("/Users/parth/cs688/cs488/media/uffizi_probe.hdr");
     globalViewDir = normalize(globalLookat - globalEye);
 	globalRight = normalize(cross(globalViewDir, globalUp));
 

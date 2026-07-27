@@ -1,6 +1,5 @@
 #pragma once
 
-#include "environment.h"
 #include "globals.h"
 #include "image.h"
 #include "input.h"
@@ -103,7 +102,6 @@ public:
 
 	void start() const {
 		globalScene.preCalc();
-		globalEnvironmentMap.load("/Users/parth/cs688/cs488/media/uffizi_probe.hdr");
 		while (glfwWindowShouldClose(globalGLFWindow) == GL_FALSE) {
 			glfwPollEvents();
 			globalViewDir = normalize(globalLookat - globalEye);

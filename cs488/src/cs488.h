@@ -12,7 +12,6 @@
 #include "material.h"
 #include "geometry.h"
 #include "mesh.h"
-#include "environment.h"
 #include "bvh.h"
 #include "scene.h"
 #include "shading.h"
