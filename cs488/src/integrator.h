@@ -77,12 +77,12 @@ public:
                             }
                             // Specular 
                             else if (hitInfo.material->type == MAT_GLASS || hitInfo.material->type == MAT_METAL) {
-                                // Need to generate a new ray here using brdf
-                                float pdf_new;
-                                float3 dir = hitInfo.material->sampler(-ray.d, hitInfo.N, pdf_new);
-                                float3 f = hitInfo.material->BRDF(dir, -ray.d, hitInfo.N);
-                                weight *= (f * abs(dot(dir, hitInfo.N))) / pdf_new; 
-                                ray = Ray(hitInfo.P + hitInfo.geometricNormal * Epsilon, dir);       
+                                // Need to generate a new ray here using brdf 
+                                BSDFSample sample = hitInfo.material->sampleBSDF(-ray.d, hitInfo.N, TransportMode::Camera);
+                                if (!sample.valid) break;
+                                weight *= (sample.f * abs(dot(sample.wi, hitInfo.N))) / sample.pdf;
+                                ray = Ray(hitInfo.P, sample.wi);
+                                // TODO : Maybe do offset 
                             }
                             else {
                                 break;

@@ -9,6 +9,41 @@ enum enumMaterialType {
 	MAT_METAL,
 	MAT_GLASS
 };
+
+enum class TransportMode {
+	Camera,
+	Light
+};
+
+struct BSDFSample {
+	float3 wi = float3(0.0f);
+    float3 f = float3(0.0f);
+    float pdf = 0.0f;
+    bool valid = false;
+};
+
+
+
+static float fresnal(float cosTheta, float etaFrom, float etaTo) {
+	const float ratio =
+        (etaFrom - etaTo) / (etaFrom + etaTo);
+
+    const float f0 = ratio * ratio;
+
+    cosTheta = std::min(
+        1.0f,
+        std::max(0.0f, std::abs(cosTheta))
+    );
+
+    const float x = 1.0f - cosTheta;
+    const float x5 = x * x * x * x * x;
+
+    return f0 + (1.0f - f0) * x5;
+}
+
+
+
+
 class Material {
 public:
 	std::string name;
@@ -121,6 +156,85 @@ public:
 
 		pdfValue = PDF(wGiven, smp, n);
 		return smp;
+	}
+
+	BSDFSample sampleBSDF(const float3 &wo, const float3 &normal, TransportMode mode) const {
+		BSDFSample result;
+		if (type == MAT_LAMBERTIAN) {
+			float u1 = PCG32::rand();
+			float u2 = PCG32::rand();
+
+			float r = sqrtf(u1);
+			float phi = 2.0f * PI * u2;
+
+			float x = r * cosf(phi);
+			float y = r * sinf(phi);
+			float z = sqrtf(std::max(0.0f, 1.0f - u1));
+
+			float3 n = normalize(normal);
+			float3 helper = fabsf(n.x) > 0.9f ? float3(0, 1, 0) : float3(1, 0, 0);
+			float3 tangent = normalize(cross(helper, n));
+			float3 bitangent = cross(n, tangent);
+
+			result.wi = normalize(x * tangent + y * bitangent + z * n);
+			const float cosTheta = std::max(0.0f, dot(result.wi, n));
+			if (cosTheta == 0.0f) {
+				return result;
+			}
+			result.f = Kd / PI;
+			result.pdf = cosTheta / PI;
+			result.valid = true;
+			return result;
+		}
+		if (type == MAT_METAL) {
+			const float3 n = normalize(normal);
+			result.wi = normalize(-wo + 2.0f * dot(wo, n) * n);
+			result.pdf = 1.0f;
+			result.f = Ks / (std::abs(dot(result.wi, n)));
+			result.valid = true;
+			return result;
+		}
+		if (type == MAT_GLASS) {
+			float etaFrom = 1.0f;
+			float etaTo = eta;
+			float3 n = normalize(normal);
+			if (dot(wo, normal) < 0.0f) {
+				// we are exiting glass 
+				n = -n;
+				etaFrom = eta;
+				etaTo = 1.0f;
+			}
+			float fresnal_ref = fresnal(dot(wo, normal), etaFrom, etaTo);
+
+			// Decide whether to reflect or refract
+			if (PCG32::rand() < fresnal_ref) {
+				result.wi = normalize(-wo + 2.0f * dot(wo, n) * n);
+				result.pdf = 1.0f;
+				result.f = Ks / (std::abs(dot(result.wi, n)));
+				result.valid = true;
+				return result;
+			}
+			else {
+				float3 tangent = (-etaFrom/etaTo) * (wo - dot(wo, n) * n);
+				if (length2(tangent) > 1.0f) {
+					// total internal reflection
+					result.wi = normalize(-wo + 2.0f * dot(wo, n) * n);
+					result.pdf = 1.0f;
+					result.f = Ks / (std::abs(dot(result.wi, n)));
+					return result;
+				}
+				float3 normalComponent = -std::sqrt(std::max(0.0f, 1.0f - length2(tangent))) * n;
+				result.wi = tangent + normalComponent;
+				result.pdf = 1.0f;
+				if (mode == TransportMode::Camera) {
+					result.f = (etaFrom * etaFrom) / (etaTo * etaTo) * (Ks / (std::abs(dot(result.wi, n))));
+				}
+				else {
+					result.f = Ks / (std::abs(dot(result.wi, n)));
+				}
+				return result;
+			}
+		} 
 	}
 };
 
