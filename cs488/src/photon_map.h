@@ -20,7 +20,7 @@ class PhotonMap {
       int dimension;    // splitting dimension
     };
 
-    const std::vector<Photon> *photons = nullptr;
+    std::vector<Photon> photons;
     std::vector<Node> nodes;
     int root = -1;
 
@@ -31,7 +31,7 @@ class PhotonMap {
         float3 minp = float3(FLT_MAX); 
         float3 maxp = float3(-FLT_MAX);
         for (int i = start; i < end; i++) {
-            const float3& p = (*photons)[indices[i]].position;
+            const float3& p = photons[indices[i]].position;
             if (minp.x > p.x) minp.x = p.x;
             if (minp.y > p.y) minp.y = p.y;
             if (minp.z > p.z) minp.z = p.z;
@@ -58,7 +58,7 @@ class PhotonMap {
             indices.begin() + median,
             indices.begin() + end,
             [this, axis](int a, int b) {
-                return (*photons)[a].position[axis] < (*photons)[b].position[axis];
+                return photons[a].position[axis] < photons[b].position[axis];
             });
         
         // index of last node is one less than the size due to 0-indexing
@@ -77,7 +77,7 @@ class PhotonMap {
         if (nodeId == -1) return;
         const Node &node = nodes[nodeId];
         int photonIdx = node.index;
-        float3 photonPosition = (*photons)[photonIdx].position;
+        float3 photonPosition = photons[photonIdx].position;
         float dist2 = linalg::distance2(photonPosition, point);
         if (dist2 < r * r) {
             accumulate.push_back(photonIdx);
@@ -105,11 +105,11 @@ class PhotonMap {
 
   public:
     void setPhotons(const std::vector<Photon> &photons) {
-        this->photons = &photons;
+        this->photons = photons;
     }
 
     void buildTree() {
-        std::vector<int> indices(photons->size());
+        std::vector<int> indices(photons.size());
         this->nodes.clear();
         for (int i = 0; i < indices.size(); i++) {
             indices[i] = i;
@@ -119,12 +119,17 @@ class PhotonMap {
 
     std::vector<int> rangeSearch(const float3 &point, float radius) const {
         std::vector<int> res;
-        if (this->photons == nullptr || this->root == -1) {
+        if (this->root == -1) {
             return res;
         }
         this->search(this->root, point, radius, res);
         return res;
     }
+
+    Photon getPhoton (int &index) {
+        return this->photons[index];
+    }
+
 
 
 

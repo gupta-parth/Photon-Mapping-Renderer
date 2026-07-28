@@ -38,8 +38,9 @@ private:
             if (!samplePointLightPhoton(scene.pointLightSources, emissionSample)) {
                 return;
             }
+
+            // TODO: Maybe check that the flux is correct and not infinite or 0 
             for (int k = 0; k < depth; k++) {
-                std::cout << emissionSample.flux[0] << " " << emissionSample.flux[1] << " " << emissionSample.flux[2];
                 HitInfo hitInfo; 
                 if (scene.intersect(hitInfo, emissionSample.ray)) {
                     if (hitInfo.material->type == MAT_LAMBERTIAN) {
@@ -65,7 +66,7 @@ private:
                     const float wing = dot(wi, ng);
                     const float wons = dot(wo, ns);
                     const float wong = dot(wo, ng);
-                    if (wing * wing <= 0.0f || wong * wong <= 0.0f) break;
+                    if (wing * wins <= 0.0f || wong * wons <= 0.0f) break;
                     emissionSample.flux *= sample.f * (std::abs(wons) * std::abs(wing) / std::abs(wong)) / sample.pdf;
                     float offsetSide = dot(wi, ng) >= 0.0f ? 1.0f : -1.0f;
                     emissionSample.ray = Ray(hitInfo.P + offsetSide * Epsilon * ng, wi);
@@ -86,7 +87,15 @@ private:
         around the hitpoint and then sum up the contribution of the photons 
         and multiply with the BRDF. 
         */
-       return float3(1,1,1);
+       std::vector<int> photons = photonMap.rangeSearch(HitInfo.P, radius);
+       float3 L;
+       for (int i = 0; i < photons.size(); i++) {
+            const Photon &photon = photonMap.getPhoton(photons[i]);
+            float3 f = HitInfo.material->BRDF(photon.wi, wo, HitInfo.N);
+            L += f * photon.flux;
+       }
+       L /= (numPhotons * PI * radius * radius);
+       return L;
     }
     
 
