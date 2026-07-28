@@ -4,6 +4,7 @@
 #include "config.h"
 #include "scene.h"
 #include "photon_map.h"
+#include "light_sampling.h"
 
 
 class Integrator {
@@ -15,9 +16,10 @@ private:
     int depth;
     int iterations;
     float radius;
-    const float alpha;         
+    const float alpha;
 
-    void tracePhotons(Scene &scene, int seed) {
+
+    void tracePhotons(Scene &scene) {
         /*
         This function does photon tracing and stores photons in the map
         when they hit diffuse surface. Note that the direction of the photon ray 
@@ -26,6 +28,54 @@ private:
         trace after depth is reached. We need to sample the direction for tracing using 
         BRDF. 
         */
+        if (scene.pointLightSources.empty()) {
+            return;
+        }
+        std::vector<Photon> photons;
+
+        for (int i = 0; i < numPhotons; i++) {
+            PointLightPhotonSample emissionSample;
+            if (!samplePointLightPhoton(scene.pointLightSources, emissionSample)) {
+                return;
+            }
+            for (int k = 0; k < depth; k++) {
+                std::cout << emissionSample.flux[0] << " " << emissionSample.flux[1] << " " << emissionSample.flux[2];
+                HitInfo hitInfo; 
+                if (scene.intersect(hitInfo, emissionSample.ray)) {
+                    if (hitInfo.material->type == MAT_LAMBERTIAN) {
+                        photons.push_back({emissionSample.flux, hitInfo.P, -emissionSample.ray.d});
+                    }
+                    float russian_prob = std::min(1.0f, std::max(emissionSample.flux[0], 
+                        std::max(emissionSample.flux[1], emissionSample.flux[2])));
+
+                    // terminate path with probability 1 - russian_prob
+                    if (PCG32::rand() >= russian_prob) {
+                        break;
+                    }
+                    emissionSample.flux /= russian_prob;
+                    BSDFSample sample = hitInfo.material->sampleBSDF(-emissionSample.ray.d, hitInfo.N, TransportMode::Light);
+                    if (!sample.valid || sample.pdf <= 0.0f) break;
+
+                    // Correction due to non-symmetry, implemented like pbrt sec 16.1.3
+                    const float3 wo = -emissionSample.ray.d;
+                    const float3 wi = sample.wi;
+                    const float3 ns = normalize(hitInfo.N);
+                    const float3 ng = normalize(hitInfo.geometricNormal);
+                    const float wins = dot(wi, ns);
+                    const float wing = dot(wi, ng);
+                    const float wons = dot(wo, ns);
+                    const float wong = dot(wo, ng);
+                    if (wing * wing <= 0.0f || wong * wong <= 0.0f) break;
+                    emissionSample.flux *= sample.f * (std::abs(wons) * std::abs(wing) / std::abs(wong)) / sample.pdf;
+                    float offsetSide = dot(wi, ng) >= 0.0f ? 1.0f : -1.0f;
+                    emissionSample.ray = Ray(hitInfo.P + offsetSide * Epsilon * ng, wi);
+                }
+                else break;
+            }
+            
+        }
+        photonMap.setPhotons(photons);
+        photonMap.buildTree();
 
     }
 
@@ -52,17 +102,20 @@ public:
         handle reflection and refraction. This function is essentially the Fig 3 from the Knaus &
         Zwicker paper.
         */
-        for (int x = 0; x < iterations; x++) {
+        const uint64_t baseSeed = 12345u;
+        for (int x = 1; x <= iterations; x++) {
 
+            // seeding so that we can get a new photon distribution
+            PCG32::seed(baseSeed + static_cast<uint16_t>(x));
             // Photon tracing pass
             // TODO: Clear photon map from the previous iter before tracing new photons
-            // TODO: Have some random seed pass into the tracePhotons so a new distribution of photons is traced
-            int seed;
-            tracePhotons(scene, seed);
+            tracePhotons(scene);
             
             // Ray tracing pass now (lines 5 - 13 in Fig 3 in the paper)
             for (int j = 0; j < globalHeight; ++j) {
                 for (int i = 0; i < globalWidth; ++i) {
+
+                    // Need to sample a ray for monte carlo
                     Ray ray = scene.eyeRay(i, j);
                     float3 weight = float3(1.0f, 1.0f, 1.0f);        // W in the paper. I use beta described in PBRT implementation 
                     float3 radiance = float3(0.0f, 0.0f, 0.0f);
@@ -81,7 +134,9 @@ public:
                                 BSDFSample sample = hitInfo.material->sampleBSDF(-ray.d, hitInfo.N, TransportMode::Camera);
                                 if (!sample.valid) break;
                                 weight *= (sample.f * abs(dot(sample.wi, hitInfo.N))) / sample.pdf;
-                                ray = Ray(hitInfo.P, sample.wi);
+
+                                float offset_side = dot(sample.wi, normalize(hitInfo.geometricNormal)) >= 0.0f ? 1.0f : -1.0f;
+                                ray = Ray(hitInfo.P + offset_side * 1e-6f * hitInfo.geometricNormal, sample.wi);
                                 // TODO : Maybe do offset 
                             }
                             else {
@@ -93,7 +148,9 @@ public:
                     image.pixel(i,j) += radiance;
                 }
             }
+
             radius = sqrtf((x + alpha) / (x+1)) * radius;
         }
+        // TODO: Average the image
     }
 };

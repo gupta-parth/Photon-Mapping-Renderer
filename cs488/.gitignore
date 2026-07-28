@@ -5,3 +5,4 @@ cmake-build-relwithdebinfo
 .idea
 media
 .vscode
+tests

@@ -221,11 +221,13 @@ public:
 					result.wi = normalize(-wo + 2.0f * dot(wo, n) * n);
 					result.pdf = 1.0f;
 					result.f = Ks / (std::abs(dot(result.wi, n)));
+					result.valid = true;
 					return result;
 				}
 				float3 normalComponent = -std::sqrt(std::max(0.0f, 1.0f - length2(tangent))) * n;
 				result.wi = tangent + normalComponent;
 				result.pdf = 1.0f;
+				result.valid = true;
 				if (mode == TransportMode::Camera) {
 					result.f = (etaFrom * etaFrom) / (etaTo * etaTo) * (Ks / (std::abs(dot(result.wi, n))));
 				}
