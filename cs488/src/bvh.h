@@ -90,6 +90,7 @@ void BVH::sortAxis(int* obj_index, const char axis, const int li, const int ri) 
 #define SAHBVH // use this in once you have SAH-BVH
 int BVH::splitBVH(int* obj_index, const int obj_num, const AABB& bbox) {
 	// ====== exntend it in A2 extra ======
+	bool makeLeaf = obj_num <= 4;
 #ifndef SAHBVH
 	int bestAxis, bestIndex;
 	AABB bboxL, bboxR, bestbboxL, bestbboxR;
@@ -126,179 +127,69 @@ int BVH::splitBVH(int* obj_index, const int obj_num, const AABB& bbox) {
 	bestbboxL = bboxL;
 	bestbboxR = bboxR;
 #else
-	constexpr int binCount = 12;
-
-	struct Bin {
-		int count = 0;
-		AABB bbox;
-	};
-
-	auto fitTriangle = [](AABB& box, const Triangle& tri) {
-		box.fit(tri.positions[0]);
-		box.fit(tri.positions[1]);
-		box.fit(tri.positions[2]);
-	};
-
-	auto fitBox = [](AABB& destination, AABB& source) {
-		destination.fit(source.get_minp());
-		destination.fit(source.get_maxp());
-	};
-
-	int bestIndex = obj_num / 2 - 1;
+	int bestAxis = -1;
+	float bestCost = FLT_MAX;
+	float bestPos = 0.0f;
+	int *sorted_obj_index = new int[obj_num];
+	int bestIndex = -1;
 	AABB bestbboxL, bestbboxR;
-	int* sorted_obj_index = new int[obj_num];
 
-	// Establish a median-split fallback for degenerate centroid bounds.
-	for (int i = 0; i < obj_num; ++i) {
-		sorted_obj_index[i] = obj_index[i];
-	}
-
-	if (obj_num > 1) {
-		const int fallbackAxis = bbox.getLargestAxis();
-		sortAxis(
-			sorted_obj_index,
-			static_cast<char>(fallbackAxis),
-			0,
-			obj_num - 1
-		);
-	}
-
-	for (int i = 0; i <= bestIndex; ++i) {
-		const Triangle& tri =
-			triangleMesh->triangles[sorted_obj_index[i]];
-		fitTriangle(bestbboxL, tri);
-	}
-
-	for (int i = bestIndex + 1; i < obj_num; ++i) {
-		const Triangle& tri =
-			triangleMesh->triangles[sorted_obj_index[i]];
-		fitTriangle(bestbboxR, tri);
-	}
-
-	// Nodes with four or fewer triangles become leaves below.
-	if (obj_num > 4 && bbox.area() > 0.0f) {
-		AABB centroidBounds;
-
-		for (int i = 0; i < obj_num; ++i) {
-			const Triangle& tri =
-				triangleMesh->triangles[obj_index[i]];
-			centroidBounds.fit(tri.center);
-		}
-
-		const int axis = centroidBounds.getLargestAxis();
-		const float3 centroidMin = centroidBounds.get_minp();
-		const float3 centroidMax = centroidBounds.get_maxp();
-		const float axisMin = centroidMin[axis];
-		const float axisExtent = centroidMax[axis] - axisMin;
-
-		if (axisExtent > 0.0f) {
-			Bin bins[binCount];
-
-			auto getBin = [&](int triangleIndex) {
-				const float centroid =
-					triangleMesh->triangles[triangleIndex].center[axis];
-				const float normalized =
-					(centroid - axisMin) / axisExtent;
-				int bin = static_cast<int>(normalized * binCount);
-
-				if (bin < 0) {
-					bin = 0;
-				} else if (bin >= binCount) {
-					bin = binCount - 1;
-				}
-
-				return bin;
-			};
-
-			for (int i = 0; i < obj_num; ++i) {
-				const int triangleIndex = obj_index[i];
-				Bin& bin = bins[getBin(triangleIndex)];
-				bin.count++;
-				fitTriangle(
-					bin.bbox,
-					triangleMesh->triangles[triangleIndex]
-				);
-			}
-
-			AABB leftBounds[binCount];
-			AABB rightBounds[binCount];
-			int leftCounts[binCount] = {};
-			int rightCounts[binCount] = {};
-
-			AABB runningLeft;
-			int runningLeftCount = 0;
-			for (int i = 0; i < binCount; ++i) {
-				if (bins[i].count > 0) {
-					fitBox(runningLeft, bins[i].bbox);
-				}
-				runningLeftCount += bins[i].count;
-				leftBounds[i] = runningLeft;
-				leftCounts[i] = runningLeftCount;
-			}
-
-			AABB runningRight;
-			int runningRightCount = 0;
-			for (int i = binCount - 1; i >= 0; --i) {
-				if (bins[i].count > 0) {
-					fitBox(runningRight, bins[i].bbox);
-				}
-				runningRightCount += bins[i].count;
-				rightBounds[i] = runningRight;
-				rightCounts[i] = runningRightCount;
-			}
-
-			const float parentArea = bbox.area();
-			float bestCost = FLT_MAX;
-			int bestSplitBin = -1;
-
-			// Twelve bins provide eleven possible split boundaries.
-			for (int splitBin = 0;
-				 splitBin < binCount - 1;
-				 ++splitBin) {
-				const int leftCount = leftCounts[splitBin];
-				const int rightCount = rightCounts[splitBin + 1];
-
-				if (leftCount == 0 || rightCount == 0) {
-					continue;
-				}
-
-				const float splitCost =
-					costBBox +
-					costTri *
-					(leftCount * leftBounds[splitBin].area() +
-					 rightCount * rightBounds[splitBin + 1].area()) /
-					parentArea;
-
-				if (splitCost < bestCost) {
-					bestCost = splitCost;
-					bestSplitBin = splitBin;
-					bestbboxL = leftBounds[splitBin];
-					bestbboxR = rightBounds[splitBin + 1];
-				}
-			}
-
-			if (bestSplitBin >= 0) {
-				int writeIndex = 0;
-
-				for (int i = 0; i < obj_num; ++i) {
-					if (getBin(obj_index[i]) <= bestSplitBin) {
-						sorted_obj_index[writeIndex++] = obj_index[i];
+	if (!makeLeaf) {
+		for (int axis = 0; axis < 3; axis++) {
+			for (int i = 0; i < obj_num; i++) {
+				float candidatePos = triangleMesh->triangles[obj_index[i]].center[axis];
+				AABB leftBox, rightBox;
+				int leftCount = 0;
+				int rightCount = 0;
+				for (int k = 0; k < obj_num; k++) {
+					const Triangle &tri = triangleMesh->triangles[obj_index[k]];
+					if (tri.center[axis] < candidatePos) {
+						leftBox.fit(tri.positions[0]);
+						leftBox.fit(tri.positions[1]);
+						leftBox.fit(tri.positions[2]);
+						leftCount++;
+					}
+					else {
+						rightBox.fit(tri.positions[0]);
+						rightBox.fit(tri.positions[1]);
+						rightBox.fit(tri.positions[2]);
+						rightCount++;
 					}
 				}
-
-				bestIndex = writeIndex - 1;
-
-				for (int i = 0; i < obj_num; ++i) {
-					if (getBin(obj_index[i]) > bestSplitBin) {
-						sorted_obj_index[writeIndex++] = obj_index[i];
-					}
+				float cost = leftCount * leftBox.area() + rightCount * rightBox.area();
+				if (leftCount > 0 && rightCount > 0 && cost < bestCost) {
+					bestCost = cost;
+					bestAxis = axis;
+					bestPos = candidatePos;
+					bestbboxL = leftBox;
+					bestbboxR = rightBox;
 				}
 			}
 		}
 	}
+
+	// No valid split
+	if (bestAxis == -1) {
+		makeLeaf = true;
+	}
+	else {
+		int x = 0;
+		for (int i = 0; i < obj_num; i++) {
+			if (triangleMesh->triangles[obj_index[i]].center[bestAxis] < bestPos) {
+				sorted_obj_index[x++] = obj_index[i];
+			}
+		}
+		bestIndex = x - 1;
+		for (int i = 0; i < obj_num; i++) {
+			if (triangleMesh->triangles[obj_index[i]].center[bestAxis] >= bestPos) {
+				sorted_obj_index[x++] = obj_index[i];
+			}
+		}
+	}
+
 #endif
 
-	if (obj_num <= 4) {
+	if (makeLeaf) {
 		delete[] sorted_obj_index;
 
 		this->nodeNum++;
@@ -415,7 +306,6 @@ bool BVH::traverse(HitInfo& minHit, const Ray& ray, int node_id, float tMin, flo
 
 	return hit;
 }
-
 
 
 
