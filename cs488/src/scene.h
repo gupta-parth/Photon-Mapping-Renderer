@@ -97,35 +97,6 @@ public:
 		return Ray(globalEye, normalize(pixelPos - globalEye));
 	}
 
-	// ray tracing (you probably don't need to change it in A2)
-	void Raytrace() const {
-		FrameBuffer.clear();
-		// loop over all pixels in the image
-		for (int j = 0; j < globalHeight; ++j) {
-			for (int i = 0; i < globalWidth; ++i) {
-				const Ray ray = eyeRay(i, j);
-				HitInfo hitInfo;
-				if (intersect(hitInfo, ray)) {
-					FrameBuffer.pixel(i, j) = shade(hitInfo, -ray.d);
-				} else {
-					FrameBuffer.pixel(i,j) = float3(0.0f); // background color
-				}
-
-			}
-
-			// show intermediate process
-			if (globalShowRaytraceProgress) {
-				constexpr int scanlineNum = 64;
-				if ((j % scanlineNum) == (scanlineNum - 1)) {
-					glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, globalWidth, globalHeight, GL_RGB, GL_FLOAT, &FrameBuffer.pixels[0]);
-					glRecti(1, 1, -1, -1);
-					glfwSwapBuffers(globalGLFWindow);
-					printf("Rendering Progress: %.3f%%\r", j / float(globalHeight - 1) * 100.0f);
-					fflush(stdout);
-				}
-			}
-		}
-	}
 
 };
 static Scene globalScene;

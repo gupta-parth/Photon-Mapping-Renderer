@@ -14,7 +14,5 @@
 #include "mesh.h"
 #include "bvh.h"
 #include "scene.h"
-#include "shading.h"
-#include "window.h"
 #include "photon_map.h"
 #include "integrator.h"

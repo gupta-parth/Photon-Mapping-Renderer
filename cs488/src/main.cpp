@@ -6,7 +6,7 @@ static PointLightSource light;
 static void setupLightSource() {
     //light.position = float3(0.5f, 4.0f, 1.0f); // use this for sponza.obj
     light.position = float3(0.0f, 0.35f, 0.08f);
-    light.wattage = float3(10.0f, 10.0f, 10.0f);
+    light.wattage = float3(5.0f, 5.0f, 5.0f);
     globalScene.addLight(&light);
 }
 
@@ -40,9 +40,9 @@ int main(int argc, const char* argv[]) {
     globalViewDir = normalize(globalLookat - globalEye);
 	globalRight = normalize(cross(globalViewDir, globalUp));
     const int iterations = 50;
-    const int photons = 50000;
+    const int photons = 100000;
     const int depth = 20;
-    const float radius = 0.04f;
+    const float radius = 0.02f;
     const float alpha = 0.7f;
     Integrator sppm(iterations, photons, alpha, radius, depth);
     sppm.render(globalScene, FrameBuffer);
