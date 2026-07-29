@@ -1,7 +1,7 @@
 #pragma once
 
 #include "geometry.h"
-#include "random.h"
+#include "rng.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -17,7 +17,7 @@ struct PointLightPhotonSample {
 
 inline bool samplePointLightPhoton(
 	const std::vector<PointLightSource*>& pointLights,
-	PointLightPhotonSample& sample) {
+	PointLightPhotonSample& sample, RNG &rng) {
 	if (pointLights.empty()) {
 		sample = PointLightPhotonSample();
 		return false;
@@ -25,12 +25,25 @@ inline bool samplePointLightPhoton(
 
 	const std::size_t lightCount = pointLights.size();
 	const std::size_t sampledIndex =
-		static_cast<std::size_t>(PCG32::rand() * static_cast<float>(lightCount));
+		static_cast<std::size_t>(rng.next1D() * static_cast<float>(lightCount));
 	sample.lightIndex = std::min(sampledIndex, lightCount - 1);
 	sample.lightChoosePdf = 1.0f / static_cast<float>(lightCount);
 
 	const PointLightSource& light = *pointLights[sample.lightIndex];
-	const float3 direction = PCG32::sampleUniformSphere(sample.directionPdf);
+	const float u1 = rng.next1D();
+	const float u2 = rng.next1D();
+
+	const float z = 1.0f - 2.0f * u1;
+	const float r = std::sqrt(std::max(0.0f, 1.0f - z * z));
+	const float phi = 2.0f * PI * u2;
+
+	sample.directionPdf = 1.0f / (4.0f * PI);
+
+	const float3 direction(
+		r * std::cos(phi),
+		r * std::sin(phi),
+		z
+	);
 	sample.ray = Ray(light.position, direction);
 
 	// wattage is total power Phi, so an isotropic point light has

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "config.h"
-#include "random.h"
+#include "rng.h"
 
 // ====== implement it in A2, if you want ======
 enum enumMaterialType {
@@ -130,15 +130,15 @@ public:
 		return pdfValue;
 	}
 
-	float3 sampler(const float3& wGiven, const float3& n, float& pdfValue) const {
+	float3 sampler(const float3& wGiven, const float3& n, float& pdfValue, RNG &rng) const {
 		// sample a vector and record its probability density as pdfValue
 
 		// we use cosine weighted importance sampling for Lambertian because it will be useful for 
 		// area lights later on
 		float3 smp = float3(0.0f);
 		if (type == MAT_LAMBERTIAN) {
-			float u1 = PCG32::rand();
-			float u2 = PCG32::rand();
+			float u1 = rng.next1D();
+			float u2 = rng.next1D();
 
 			float r = sqrtf(u1);
 			float phi = 2.0f * PI * u2;
@@ -164,11 +164,11 @@ public:
 		return smp;
 	}
 
-	BSDFSample sampleBSDF(const float3 &wo, const float3 &normal, TransportMode mode) const {
+	BSDFSample sampleBSDF(const float3 &wo, const float3 &normal, TransportMode mode, RNG &rng) const {
 		BSDFSample result;
 		if (type == MAT_LAMBERTIAN) {
-			float u1 = PCG32::rand();
-			float u2 = PCG32::rand();
+			float u1 = rng.next1D();
+			float u2 = rng.next1D();
 
 			float r = sqrtf(u1);
 			float phi = 2.0f * PI * u2;
@@ -213,7 +213,7 @@ public:
 			float fresnal_ref = fresnal(dot(wo, normal), etaFrom, etaTo);
 
 			// Decide whether to reflect or refract
-			if (PCG32::rand() < fresnal_ref) {
+			if (rng.next1D() < fresnal_ref) {
 				result.wi = normalize(-wo + 2.0f * dot(wo, n) * n);
 				result.pdf = 1.0f;
 				result.f = Ks / (std::abs(dot(result.wi, n)));

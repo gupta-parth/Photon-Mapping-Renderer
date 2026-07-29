@@ -20,7 +20,7 @@ private:
     float alpha;
 
 
-    void tracePhotons(Scene &scene) {
+    void tracePhotons(Scene &scene, std::vector<RNG> &samplers) {
         /*
         This function does photon tracing and stores photons in the map
         when they hit diffuse surface. Note that the direction of the photon ray 
@@ -33,11 +33,14 @@ private:
             return;
         }
         std::vector<Photon> photons;
-
+        #pragma omp parallel
+        {
+            RNG &rng = samplers[omp_get_thread_num()];
+        #pragma omp for schedule(dynamic, 32)
         for (int i = 0; i < numPhotons; i++) {
             PointLightPhotonSample emissionSample;
-            if (!samplePointLightPhoton(scene.pointLightSources, emissionSample)) {
-                return;
+            if (!samplePointLightPhoton(scene.pointLightSources, emissionSample, rng)) {
+                continue;
             }
 
             // TODO: Maybe check that the flux is correct and not infinite or 0 
@@ -45,17 +48,20 @@ private:
                 HitInfo hitInfo; 
                 if (scene.intersect(hitInfo, emissionSample.ray)) {
                     if (hitInfo.material->type == MAT_LAMBERTIAN) {
+                        #pragma omp critical(photon_append) 
+                        {
                         photons.push_back({emissionSample.flux, hitInfo.P, -emissionSample.ray.d});
+                        }
                     }
                     float russian_prob = std::min(1.0f, std::max(emissionSample.flux[0], 
                         std::max(emissionSample.flux[1], emissionSample.flux[2])));
 
                     // terminate path with probability 1 - russian_prob
-                    if (PCG32::rand() >= russian_prob) {
+                    if (rng.next1D() >= russian_prob) {
                         break;
                     }
                     emissionSample.flux /= russian_prob;
-                    BSDFSample sample = hitInfo.material->sampleBSDF(-emissionSample.ray.d, hitInfo.N, TransportMode::Light);
+                    BSDFSample sample = hitInfo.material->sampleBSDF(-emissionSample.ray.d, hitInfo.N, TransportMode::Light, rng);
                     if (!sample.valid || sample.pdf <= 0.0f) break;
 
                     // Correction due to non-symmetry, implemented like pbrt sec 16.1.3
@@ -75,6 +81,7 @@ private:
                 else break;
             }
             
+        }
         }
         photonMap.setPhotons(photons);
         photonMap.buildTree();
@@ -122,15 +129,25 @@ public:
         Zwicker paper.
         */
         const uint64_t baseSeed = 12345u;
-        for (int x = 1; x <= iterations; x++) {
+        const int maxThreads = omp_get_max_threads();
+        std::vector<RNG> samplers;
+        for (int threadID = 0; threadID < maxThreads; threadID++) {
+            samplers.emplace_back(baseSeed, 0u, static_cast<uint64_t>(threadID));
+        }
 
-            // seeding so that we can get a new photon distribution
-            PCG32::seed(baseSeed + static_cast<uint16_t>(x));
+        for (int x = 1; x <= iterations; x++) {
+            std::cout << "Iteration: " << x << std::endl;
+
 
             // Photon tracing pass
             photonMap.reset();
-            tracePhotons(scene);
+            tracePhotons(scene, samplers);
             
+            #pragma omp parallel
+            {
+                RNG &rng = samplers[omp_get_thread_num()];
+            
+            #pragma omp for schedule(dynamic, 1)
             // Ray tracing pass now (lines 5 - 13 in Fig 3 in the paper)
             for (int j = 0; j < globalHeight; ++j) {
                 for (int i = 0; i < globalWidth; ++i) {
@@ -151,8 +168,8 @@ public:
                             // Specular 
                             else if (hitInfo.material->type == MAT_GLASS || hitInfo.material->type == MAT_METAL) {
                                 // Need to generate a new ray here using brdf 
-                                BSDFSample sample = hitInfo.material->sampleBSDF(-ray.d, hitInfo.N, TransportMode::Camera);
-                                if (!sample.valid) break;
+                                BSDFSample sample = hitInfo.material->sampleBSDF(-ray.d, hitInfo.N, TransportMode::Camera, rng);
+                                if (!sample.valid || sample.pdf <= 0.0f) break;
                                 weight *= (sample.f * abs(dot(sample.wi, hitInfo.N))) / sample.pdf;
 
                                 float offset_side = dot(sample.wi, normalize(hitInfo.geometricNormal)) >= 0.0f ? 1.0f : -1.0f;
@@ -167,7 +184,7 @@ public:
                     image.pixel(i,j) += radiance;
                 }
             }
-
+        }
             radius = sqrtf((x + alpha) / (x+1)) * radius;
         }
         for (int i = 0; i < globalWidth; i++) {
