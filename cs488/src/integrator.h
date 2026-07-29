@@ -5,6 +5,7 @@
 #include "scene.h"
 #include "photon_map.h"
 #include "light_sampling.h"
+#include <omp.h>
 
 
 class Integrator {

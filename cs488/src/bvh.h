@@ -127,6 +127,9 @@ int BVH::splitBVH(int* obj_index, const int obj_num, const AABB& bbox) {
 	bestbboxL = bboxL;
 	bestbboxR = bboxR;
 #else
+	/* Source: https://jacco.ompf2.com/2022/04/18/how-to-build-a-bvh-part-2-faster-rays/
+	I used the above source to understand SAH. All written code is my own.*/
+
 	int bestAxis = -1;
 	float bestCost = FLT_MAX;
 	float bestPos = 0.0f;
