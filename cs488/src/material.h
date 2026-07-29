@@ -10,6 +10,9 @@ enum enumMaterialType {
 	MAT_GLASS
 };
 
+
+// Inspired from PBRT's transport mode
+// Camera is the radiance mode and Importance is the light mode
 enum class TransportMode {
 	Camera,
 	Light
@@ -93,16 +96,19 @@ public:
 	float3 BRDF(const float3& wi, const float3& wo, const float3& n) const {
 		float3 brdfValue = float3(0.0f);
 		if (type == MAT_LAMBERTIAN) {
-			// BRDF
+
+			// Check if either direction is below the surface
+			const float3 normal = normalize(n);
+			const float3 nwi = normalize(wi);
+			const float3 nwo = normalize(wo);
+			if (dot(normal, nwi) <= 0.0f || dot(normal, nwo) <= 0.0f) {
+				return float3(0.0f);
+			}
 			brdfValue = Kd / PI;
 		} else if (type == MAT_METAL) {
-			float3 normal = normalize(n);
-			float3 incident = normalize(wi);
-			float cosTheta = abs(dot(normal,incident));
-			if (cosTheta <= 1e-6f) return float3(0.0f);
-			brdfValue = Ks / cosTheta; 
+			return float3(0.0f);
 		} else if (type == MAT_GLASS) {
-			// empty
+			return float3(0.0f);
 		}
 		return brdfValue;
 	};
@@ -236,7 +242,8 @@ public:
 				}
 				return result;
 			}
-		} 
+		}
+		return result; 
 	}
 };
 

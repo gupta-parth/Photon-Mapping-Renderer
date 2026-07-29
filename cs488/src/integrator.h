@@ -16,7 +16,7 @@ private:
     int depth;
     int iterations;
     float radius;
-    const float alpha;
+    float alpha;
 
 
     void tracePhotons(Scene &scene) {
@@ -91,6 +91,7 @@ private:
        float3 L;
        for (int i = 0; i < photons.size(); i++) {
             const Photon &photon = photonMap.getPhoton(photons[i]);
+
             float3 f = HitInfo.material->BRDF(photon.wi, wo, HitInfo.N);
             L += f * photon.flux;
        }
@@ -100,6 +101,14 @@ private:
     
 
 public:
+
+    Integrator(int iterations, int photons, float alpha, float initRadius, float depth) {
+        this->iterations = iterations;
+        this->numPhotons = photons;
+        this->alpha = alpha;
+        this->radius = initRadius;
+        this->depth = depth;
+    }
 
     void render(Scene &scene, Image &image) {
         /*
@@ -116,8 +125,9 @@ public:
 
             // seeding so that we can get a new photon distribution
             PCG32::seed(baseSeed + static_cast<uint16_t>(x));
+
             // Photon tracing pass
-            // TODO: Clear photon map from the previous iter before tracing new photons
+            photonMap.reset();
             tracePhotons(scene);
             
             // Ray tracing pass now (lines 5 - 13 in Fig 3 in the paper)
@@ -146,7 +156,6 @@ public:
 
                                 float offset_side = dot(sample.wi, normalize(hitInfo.geometricNormal)) >= 0.0f ? 1.0f : -1.0f;
                                 ray = Ray(hitInfo.P + offset_side * 1e-6f * hitInfo.geometricNormal, sample.wi);
-                                // TODO : Maybe do offset 
                             }
                             else {
                                 break;
@@ -160,6 +169,10 @@ public:
 
             radius = sqrtf((x + alpha) / (x+1)) * radius;
         }
-        // TODO: Average the image
+        for (int i = 0; i < globalWidth; i++) {
+            for (int j = 0; j < globalHeight; j++) {
+                image.pixel(i,j) /= iterations;
+            }
+        }
     }
 };

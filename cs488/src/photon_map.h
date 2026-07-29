@@ -130,6 +130,12 @@ class PhotonMap {
         return this->photons[index];
     }
 
+    void reset() {
+        photons.clear();
+        nodes.clear();
+        root = -1;
+    }
+
 
 
 

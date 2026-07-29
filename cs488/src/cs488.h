@@ -16,3 +16,5 @@
 #include "scene.h"
 #include "shading.h"
 #include "window.h"
+#include "photon_map.h"
+#include "integrator.h"
