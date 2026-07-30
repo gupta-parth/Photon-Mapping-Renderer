@@ -9,15 +9,18 @@ public:
 	std::vector<float> depths;
 	int width = 0, height = 0;
 
-	static float toneMapping(const float r) {
+	static float toneMapping(const float r, const float exposure = 1.0f) {
 		// you may want to implement better tone mapping
-		return std::max(std::min(1.0f, r), 0.0f);
+		const float exposed = exposure * std::max(0.0f, r);
+		return 1.0f - std::exp(-exposed);
+		//return std::max(std::min(1.0f, r), 0.0f);
 	}
 
-	static float gammaCorrection(const float r, const float gamma = 1.0f) {
+	static float gammaCorrection(const float r, const float gamma = 2.2f) {
 		// assumes r is within 0 to 1
 		// gamma is typically 2.2, but the default is 1.0 to make it linear
-		return pow(r, 1.0f / gamma);
+		const float clamped = std::max(0.0f, std::min(1.0f, r));
+		return pow(clamped, 1.0f / gamma);
 	}
 
 	void resize(const int newWdith, const int newHeight) {
