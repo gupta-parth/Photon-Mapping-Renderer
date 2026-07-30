@@ -58,6 +58,7 @@ public:
 	float3 Ka = float3(0.0f);
 	float3 Kd = float3(0.9f);
 	float3 Ks = float3(0.0f);
+	float3 Ke = float3(0.0f);
 	float Ns = 0.0;
 
 	// support 8-bit texture

@@ -29,7 +29,7 @@ private:
         trace after depth is reached. We need to sample the direction for tracing using 
         BRDF. 
         */
-        if (scene.pointLightSources.empty()) {
+        if (scene.areaLightSources.empty()) {
             return;
         }
         std::vector<Photon> photons;
@@ -38,8 +38,8 @@ private:
             RNG &rng = samplers[omp_get_thread_num()];
         #pragma omp for schedule(dynamic, 32)
         for (int i = 0; i < numPhotons; i++) {
-            PointLightPhotonSample emissionSample;
-            if (!samplePointLightPhoton(scene.pointLightSources, emissionSample, rng)) {
+            LightPhotonSample emissionSample;
+            if (!sampleAreaLight(scene.areaLightSources, scene.totalLightArea, emissionSample, rng)) {
                 continue;
             }
 
@@ -156,13 +156,17 @@ public:
                     Ray ray = scene.eyeRay(i, j);
                     float3 weight = float3(1.0f, 1.0f, 1.0f);        // W in the paper. I use beta described in PBRT implementation 
                     float3 radiance = float3(0.0f, 0.0f, 0.0f);
-
+                    
                     // We trace until diffuse surface is hit
                     for (int k = 0; k < depth; k++) {
                         HitInfo hitInfo;
+
                         if (scene.intersect(hitInfo, ray)) {
+                            if (dot(hitInfo.geometricNormal, -ray.d) > 0.0f) {
+                                radiance += weight * hitInfo.material->Ke;
+                            }
                             if (hitInfo.material->type == MAT_LAMBERTIAN) {
-                                radiance = weight * getRadiance(-ray.d, hitInfo);
+                                radiance += weight * getRadiance(-ray.d, hitInfo);
                                 break;
                             }
                             // Specular 

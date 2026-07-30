@@ -10,6 +10,8 @@ class Scene {
 public:
 	std::vector<TriangleMesh*> objects;
 	std::vector<PointLightSource*> pointLightSources;
+	std::vector<AreaLight> areaLightSources;
+	float totalLightArea = 0.0f;
 	std::vector<BVH> bvhs;
 
 	void addObject(TriangleMesh* pObj) {
@@ -25,6 +27,27 @@ public:
 			objects[i]->preCalc();
 			bvhs[i].build(objects[i]);
 		}
+		areaLightSources.clear();
+		totalLightArea = 0.0f;
+		// build area lights;
+		for (TriangleMesh *object : objects) {
+			for (Triangle &tri: object->triangles) {
+				const Material &material = object->materials[tri.idMaterial];
+				bool emissive = material.Ke.x > 0.0f || material.Ke.y > 0.0f || material.Ke.z > 0.0f;
+				if (!emissive) continue;
+				float area = 0.5f * length(cross(tri.positions[1]-tri.positions[0], tri.positions[2] - tri.positions[0]));
+				if (area <= 0.0f) continue;
+				totalLightArea += area;
+				AreaLight light;
+				light.tri = &tri;
+				light.emission = material.Ke;
+				light.area = area;
+				light.cummulativeArea = totalLightArea;
+				areaLightSources.push_back(light);
+			
+			}
+		}
+
 	}
 
 	// ray-scene intersection

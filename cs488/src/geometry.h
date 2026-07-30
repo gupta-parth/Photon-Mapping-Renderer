@@ -10,7 +10,6 @@ public:
 };
 
 
-
 class Ray {
 public:
 	float3 o, d;
@@ -140,4 +139,10 @@ struct Vertex {
 	float inverseW;
 };
 
-
+class AreaLight {
+public:
+	Triangle *tri;
+	float3 emission;
+	float area = 0.0f;
+	float cummulativeArea = 0.0f;		// used for selecting the triangle;
+};

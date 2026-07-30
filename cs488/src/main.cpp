@@ -34,8 +34,10 @@ static void setupScene(int argc, const char* argv[]) {
 
 int main(int argc, const char* argv[]) {
     setupScene(argc, argv);
-    setupLightSource();
+    // setupLightSource();
 
+
+    // Note precalc also adds area light sources 
     globalScene.preCalc();
     globalViewDir = normalize(globalLookat - globalEye);
 	globalRight = normalize(cross(globalViewDir, globalUp));

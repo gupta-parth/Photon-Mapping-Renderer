@@ -283,6 +283,11 @@ private:
 				sscanf(lineStr.c_str(), "%f\n", &s);
 				mtl.Ns = s;
 				mtl.texture = nullptr;
+				// materials.push_back(mtl);
+			} else if (lineStr.compare(0, 2, "Ke", 0, 2) == 0) {
+				lineStr.erase(0,3);
+				sscanf(lineStr.c_str(), "%f %f %f\n", &r, &g, &b);
+				mtl.Ke = float3(r, g, b);
 				materials.push_back(mtl);
 			} else if (lineStr.compare(0, 6, "map_Kd", 0, 6) == 0) {
 				lineStr.erase(0, 7);
