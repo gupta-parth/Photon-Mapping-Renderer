@@ -15,7 +15,14 @@ I implemented the Surface Area Heuristic which estimates the cost of the split a
 $$ 
 C = N_L \cdot A_L + N_R \cdot A_R
 $$
-where $N_L$ is the number of triangles in the left region and $A_L$ is the total area of those triangles. Hence, the cost takes into acccount the probability that a random ray intersects a region. I implemented a full-sweep version which considers all possible primitives on each axis and hence costs $O(n^2)$ to build wehere $n$ is the number of primitives. To do the implementation, I followed a blog series on BVH by Jacco Bikker ([blog](https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/)) and also consulted PBRT's section 4.3. The code in ```bvh.h``` is based on parts 1 and 2 of the blog. 
+where $N_L$ is the number of triangles in the left region and $A_L$ is the total area of those triangles. Hence, the cost takes into acccount the probability that a random ray intersects a region. I implemented a full-sweep version which considers all possible primitives on each axis and hence costs $O(n^2)$ to build wehere $n$ is the number of primitives. To do the implementation, I followed a blog series on BVH by Jacco Bikker ([blog](https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/)) and also consulted PBRT's section 4.3. The code in ```bvh.h``` is based on parts 1 and 2 of the blog. The following table compares render times with SAH-BVH, with the naive non-SAH BVH, and without a BVH.
+
+| Model Name | Triangle Count |Time with SAH | Time with naive BVH | Time without BVH |
+| ---------- | --------------:| -------------:| -----------------:| -----------------:|
+| CornellBox-Original-triangulated | 36 | 0.583798 s | 0.721308 s | 0.924416 s |
+| CornellBox-Water | 7089 | 2.702817 s | 5.247191 s | 112.023004 s |
+
+Each configuration was run five times, and the median render-only wall-clock time is reported. The iterations were set to 10, the photon count to 20000, and the depth to 20 for every run. This smaller workload kept the single-threaded brute-force benchmark below 15 minutes. All times are recorded in seconds.
 
 ### KD-tree 
 
@@ -31,7 +38,7 @@ To change camera parameters, you can refer to lines 44-45 in ```main.cpp```. The
 ## Caveats and bugs 
 
 ## Acknowledgements
-I used 3d models provided 
+Much of the code here is based on 
 
 
 
@@ -65,4 +72,5 @@ Bvh CornellBox-Water took 2 mins and 1 second (50 iterations, 100000 photons, 20
 # References and acknowledgements 
 1. Claude Knaus and Matthias Zwicker. 2011. Progressive photon mapping: A probabilistic approach. ACM Trans. Graph. 30, 3, Article 25 (May 2011), 13 pages. https://doi.org/10.1145/1966394.1966404
 2. Jacco Bikker. April 2022. How to build a BVH. https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/
-3. 
+3. https://www.cs.princeton.edu/courses/archive/fall18/cos526/papers/jensen01.pdf
+4. PBRT
