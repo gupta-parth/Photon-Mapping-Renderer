@@ -39,6 +39,11 @@ int main(int argc, const char* argv[]) {
 
     // Note precalc also adds area light sources 
     globalScene.preCalc();
+
+    // change camera stuff 
+    globalEye = float3(0.0f, 0.8f, 3.2f);
+    globalLookat = float3(0.0f, 0.8f, 0.0f);
+
     globalViewDir = normalize(globalLookat - globalEye);
 	globalRight = normalize(cross(globalViewDir, globalUp));
     const int iterations = 50;
@@ -50,5 +55,5 @@ int main(int argc, const char* argv[]) {
     sppm.render(globalScene, FrameBuffer);
 
     //globalScene.Raytrace();
-    FrameBuffer.save("output.png");
+    FrameBuffer.save("cornell-water-50.png");
 }

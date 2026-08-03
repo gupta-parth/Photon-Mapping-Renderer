@@ -37,9 +37,4 @@ target_include_directories(test_photon_map PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/sr
 target_include_directories(test_photon_map PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include)
 target_include_directories(test_photon_map PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glew/include)
 
-add_executable(test_point_light_sampling
-        tests/test_point_light_sampling.cpp)
 
-target_include_directories(test_point_light_sampling PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_include_directories(test_point_light_sampling PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include)
-target_include_directories(test_point_light_sampling PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glew/include)

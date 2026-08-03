@@ -191,7 +191,7 @@ int BVH::splitBVH(int* obj_index, const int obj_num, const AABB& bbox) {
 	}
 
 #endif
-
+	  //if (obj_num <= 4) {
 	if (makeLeaf) {
 		delete[] sorted_obj_index;
 
