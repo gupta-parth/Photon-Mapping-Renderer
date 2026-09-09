@@ -1,0 +1,78 @@
+# Crystal Optics Gallery materials
+
+newmtl ivory_floor
+Ka 0.018 0.016 0.013
+Kd 0.38 0.35 0.29
+Ks 0 0 0
+Ns 10
+Ke 0 0 0
+
+newmtl ivory_ceiling
+Ka 0.018 0.018 0.016
+Kd 0.35 0.34 0.31
+Ks 0 0 0
+Ns 10
+Ke 0 0 0
+
+newmtl ivory_back
+Ka 0.022 0.02 0.018
+Kd 0.45 0.42 0.37
+Ks 0 0 0
+Ns 10
+Ke 0 0 0
+
+newmtl burgundy_wall
+Ka 0.022 0.004 0.007
+Kd 0.3 0.035 0.055
+Ks 0 0 0
+Ns 10
+Ke 0 0 0
+
+newmtl blue_wall
+Ka 0.004 0.009 0.022
+Kd 0.03 0.12 0.32
+Ks 0 0 0
+Ns 10
+Ke 0 0 0
+
+newmtl caustic_plate
+Ka 0.03 0.028 0.024
+Kd 0.72 0.68 0.58
+Ks 0 0 0
+Ns 10
+Ke 0 0 0
+
+newmtl metal_support
+Ka 0.015 0.014 0.012
+Kd 0 0 0
+Ks 0.78 0.7 0.54
+Ns 100
+Ke 0 0 0
+
+newmtl glass_knot
+Ka 0 0 0
+Kd 0 0 0
+Ks 1 1 1
+Ns 500
+Ke 0 0 0
+
+newmtl glass_lens
+Ka 0 0 0
+Kd 0 0 0
+Ks 1 1 1
+Ns 500
+Ke 0 0 0
+
+newmtl glass_gem
+Ka 0 0 0
+Kd 0 0 0
+Ks 1 1 1
+Ns 500
+Ke 0 0 0
+
+newmtl area_warm
+Ka 0 0 0
+Kd 0 0 0
+Ks 0 0 0
+Ns 0
+Ke 20 18 15

@@ -1,0 +1,71 @@
+# Sunlit Caustics Bench materials
+
+newmtl warm_gray_floor
+Ka 0.018 0.017 0.015
+Kd 0.52 0.5 0.46
+Ks 0 0 0
+Ns 10
+Ke 0 0 0
+
+newmtl neutral_ceiling
+Ka 0.012 0.012 0.011
+Kd 0.3 0.29 0.27
+Ks 0 0 0
+Ns 10
+Ke 0 0 0
+
+newmtl neutral_back
+Ka 0.016 0.015 0.014
+Kd 0.38 0.36 0.33
+Ks 0 0 0
+Ns 10
+Ke 0 0 0
+
+newmtl muted_umber_wall
+Ka 0.012 0.006 0.005
+Kd 0.22 0.09 0.07
+Ks 0 0 0
+Ns 10
+Ke 0 0 0
+
+newmtl muted_slate_wall
+Ka 0.005 0.008 0.012
+Kd 0.07 0.13 0.22
+Ks 0 0 0
+Ns 10
+Ke 0 0 0
+
+newmtl dark_metal
+Ka 0.008 0.008 0.007
+Kd 0.025 0.024 0.022
+Ks 0.52 0.49 0.42
+Ns 120
+Ke 0 0 0
+
+newmtl glass_lens
+Ka 0 0 0
+Kd 0 0 0
+Ks 1 1 1
+Ns 500
+Ke 0 0 0
+
+newmtl glass_knot
+Ka 0 0 0
+Kd 0 0 0
+Ks 1 1 1
+Ns 500
+Ke 0 0 0
+
+newmtl glass_gem
+Ka 0 0 0
+Kd 0 0 0
+Ks 1 1 1
+Ns 500
+Ke 0 0 0
+
+newmtl area_sun
+Ka 0 0 0
+Kd 0 0 0
+Ks 0 0 0
+Ns 0
+Ke 4700 4230 3525

@@ -1,6 +1,7 @@
 #pragma once 
 
 #include "config.h"
+#include <utility>
 
 struct Photon {
     float3 flux;                       
@@ -101,11 +102,42 @@ class PhotonMap {
         }
     }
 
+    void accumulateFlux(int nodeId, const float3 &point, float radiusSquared,
+        const float3 &normal, float3 &flux) const {
+        if (nodeId == -1) return;
+        const Node &node = nodes[nodeId];
+        const Photon &photon = photons[node.index];
+        const float3 &photonPosition = photon.position;
+        const float dist2 = linalg::distance2(photonPosition, point);
+        if (dist2 < radiusSquared && dot(photon.wi, normal) > 0.0f) {
+            flux += photon.flux;
+        }
+
+        const int axis = node.dimension;
+        const float axisDist = point[axis] - photonPosition[axis];
+        if (axisDist < 0.0f) {
+            accumulateFlux(node.leftChild, point, radiusSquared, normal, flux);
+            if (axisDist * axisDist <= radiusSquared) {
+                accumulateFlux(node.rightChild, point, radiusSquared, normal, flux);
+            }
+        }
+        else {
+            accumulateFlux(node.rightChild, point, radiusSquared, normal, flux);
+            if (axisDist * axisDist <= radiusSquared) {
+                accumulateFlux(node.leftChild, point, radiusSquared, normal, flux);
+            }
+        }
+    }
+
 
 
   public:
     void setPhotons(const std::vector<Photon> &photons) {
         this->photons = photons;
+    }
+
+    void setPhotons(std::vector<Photon> &&photons) {
+        this->photons = std::move(photons);
     }
 
     void buildTree() {
@@ -124,6 +156,14 @@ class PhotonMap {
         }
         this->search(this->root, point, radius, res);
         return res;
+    }
+
+    float3 sumFlux(const float3 &point, float radius, const float3 &normal) const {
+        float3 flux = float3(0.0f);
+        if (this->root != -1) {
+            this->accumulateFlux(this->root, point, radius * radius, normal, flux);
+        }
+        return flux;
     }
 
     Photon getPhoton (int &index) {

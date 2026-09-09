@@ -103,21 +103,27 @@ public:
 	}
 
 
-	// eye ray generation (given to you for A2)
-	Ray eyeRay(int x, int y) const {
+	// Generate a ray through a floating-point sample position in raster space.
+	// Integer pixel coordinates use the centered overload below, while renderers
+	// can jitter sampleX/sampleY within a pixel for antialiasing.
+	Ray eyeRay(float sampleX, float sampleY) const {
 		// compute the camera coordinate system 
 		const float3 wDir = normalize(float3(-globalViewDir));
 		const float3 uDir = normalize(cross(globalUp, wDir));
 		const float3 vDir = cross(wDir, uDir);
 
-		// compute the pixel location in the world coordinate system using the camera coordinate system
-		// trace a ray through the center of each pixel
-		const float imPlaneUPos = (x + 0.5f) / float(globalWidth) - 0.5f;
-		const float imPlaneVPos = (y + 0.5f) / float(globalHeight) - 0.5f;
+		// Compute the sample location in the world-space image plane.
+		const float imPlaneUPos = sampleX / float(globalWidth) - 0.5f;
+		const float imPlaneVPos = sampleY / float(globalHeight) - 0.5f;
 
 		const float3 pixelPos = globalEye + float(globalAspectRatio * globalFilmSize * imPlaneUPos) * uDir + float(globalFilmSize * imPlaneVPos) * vDir - globalDistanceToFilm * wDir;
 
 		return Ray(globalEye, normalize(pixelPos - globalEye));
+	}
+
+	// Preserve the original centered-pixel interface.
+	Ray eyeRay(int x, int y) const {
+		return eyeRay(float(x) + 0.5f, float(y) + 0.5f);
 	}
 
 

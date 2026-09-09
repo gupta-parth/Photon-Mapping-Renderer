@@ -1,6 +1,7 @@
 #include "photon_map.h"
 
 #include <assert.h>
+#include <cmath>
 
 Photon makePhoton(float x, float y, float z) {
     Photon photon;
@@ -191,6 +192,77 @@ void checkExpectedTopSplits(const PhotonMap& map) {
     assert(map.getNodeDimension(rightChild) == 2);
 }
 
+void checkFloat3Equal(const float3& actual, const float3& expected) {
+    const float epsilon = 1e-6f;
+    assert(std::abs(actual.x - expected.x) < epsilon);
+    assert(std::abs(actual.y - expected.y) < epsilon);
+    assert(std::abs(actual.z - expected.z) < epsilon);
+}
+
+Photon makeFluxPhoton(
+    const float3& position,
+    const float3& flux,
+    const float3& wi) {
+    Photon photon;
+    photon.position = position;
+    photon.flux = flux;
+    photon.wi = wi;
+    return photon;
+}
+
+void checkSumFluxMatchesLegacySearch() {
+    std::vector<Photon> photons;
+    photons.push_back(makeFluxPhoton(
+        float3(0.0f, 0.0f, 0.0f), float3(1.0f, 2.0f, 3.0f), float3(0.0f, 1.0f, 0.0f)));
+    photons.push_back(makeFluxPhoton(
+        float3(0.2f, 0.0f, 0.0f), float3(4.0f, 5.0f, 6.0f), float3(0.0f, 2.0f, 0.0f)));
+    photons.push_back(makeFluxPhoton(
+        float3(0.0f, 0.2f, 0.0f), float3(8.0f, 8.0f, 8.0f), float3(0.0f, -1.0f, 0.0f)));
+    photons.push_back(makeFluxPhoton(
+        float3(0.0f, 0.0f, 0.2f), float3(16.0f, 16.0f, 16.0f), float3(1.0f, 0.0f, 0.0f)));
+    photons.push_back(makeFluxPhoton(
+        float3(2.0f, 0.0f, 0.0f), float3(32.0f, 32.0f, 32.0f), float3(0.0f, 1.0f, 0.0f)));
+
+    PhotonMap map;
+    map.setPhotons(photons);
+    map.buildTree();
+
+    const float3 point(0.1f, 0.0f, 0.0f);
+    const float radius = 0.5f;
+    const float3 normal(0.0f, 1.0f, 0.0f);
+    float3 legacyFlux(0.0f);
+    std::vector<int> photonIndices = map.rangeSearch(point, radius);
+    for (int photonIndex : photonIndices) {
+        const Photon photon = map.getPhoton(photonIndex);
+        if (dot(photon.wi, normal) > 0.0f) {
+            legacyFlux += photon.flux;
+        }
+    }
+
+    checkFloat3Equal(map.sumFlux(point, radius, normal), legacyFlux);
+    checkFloat3Equal(legacyFlux, float3(5.0f, 7.0f, 9.0f));
+    checkFloat3Equal(
+        map.sumFlux(point, radius, -normal),
+        float3(8.0f, 8.0f, 8.0f));
+}
+
+void checkSumFluxUsesStrictRadius() {
+    const float justInside = std::nextafter(1.0f, 0.0f);
+    std::vector<Photon> photons;
+    photons.push_back(makeFluxPhoton(
+        float3(1.0f, 0.0f, 0.0f), float3(1.0f, 0.0f, 0.0f), float3(0.0f, 1.0f, 0.0f)));
+    photons.push_back(makeFluxPhoton(
+        float3(justInside, 0.0f, 0.0f), float3(0.0f, 2.0f, 0.0f), float3(0.0f, 1.0f, 0.0f)));
+
+    PhotonMap map;
+    map.setPhotons(photons);
+    map.buildTree();
+
+    checkFloat3Equal(
+        map.sumFlux(float3(0.0f), 1.0f, float3(0.0f, 1.0f, 0.0f)),
+        float3(0.0f, 2.0f, 0.0f));
+}
+
 int main() {
     std::vector<Photon> photons = makeTenPhotons();
 
@@ -208,6 +280,8 @@ int main() {
     checkEveryPhotonAppearsOnce(map, (int)photons.size());
     checkExpectedTopSplits(map);
     checkKdTreeSplits(map, photons, map.getRoot());
+    checkSumFluxMatchesLegacySearch();
+    checkSumFluxUsesStrictRadius();
 
     std::cout << "test_photon_map passed" << std::endl;
     return 0;

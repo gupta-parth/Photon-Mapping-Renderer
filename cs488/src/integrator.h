@@ -33,9 +33,12 @@ private:
             return;
         }
         std::vector<Photon> photons;
+        std::vector<std::vector<Photon>> threadPhotons(samplers.size());
         #pragma omp parallel
         {
-            RNG &rng = samplers[omp_get_thread_num()];
+            const int threadID = omp_get_thread_num();
+            RNG &rng = samplers[threadID];
+            std::vector<Photon> &localPhotons = threadPhotons[threadID];
         #pragma omp for schedule(dynamic, 32)
         for (int i = 0; i < numPhotons; i++) {
             LightPhotonSample emissionSample;
@@ -48,10 +51,7 @@ private:
                 HitInfo hitInfo; 
                 if (scene.intersect(hitInfo, emissionSample.ray)) {
                     if (hitInfo.material->type == MAT_LAMBERTIAN) {
-                        #pragma omp critical(photon_append) 
-                        {
-                        photons.push_back({emissionSample.flux, hitInfo.P, -emissionSample.ray.d});
-                        }
+                        localPhotons.push_back({emissionSample.flux, hitInfo.P, -emissionSample.ray.d});
                     }
                     float russian_prob = std::min(1.0f, std::max(emissionSample.flux[0], 
                         std::max(emissionSample.flux[1], emissionSample.flux[2])));
@@ -83,9 +83,17 @@ private:
             
         }
         }
-        photonMap.setPhotons(photons);
+        std::size_t totalPhotons = 0;
+        for (const std::vector<Photon> &localPhotons : threadPhotons) {
+            totalPhotons += localPhotons.size();
+        }
+        photons.reserve(totalPhotons);
+        for (std::vector<Photon> &localPhotons : threadPhotons) {
+            photons.insert(photons.end(), localPhotons.begin(), localPhotons.end());
+            std::vector<Photon>().swap(localPhotons);
+        }
+        photonMap.setPhotons(std::move(photons));
         photonMap.buildTree();
-
     }
 
     float3 getRadiance(const float3 &wo, HitInfo &HitInfo) {
@@ -95,14 +103,12 @@ private:
         around the hitpoint and then sum up the contribution of the photons 
         and multiply with the BRDF. 
         */
-       std::vector<int> photons = photonMap.rangeSearch(HitInfo.P, radius);
-       float3 L;
-       for (int i = 0; i < photons.size(); i++) {
-            const Photon &photon = photonMap.getPhoton(photons[i]);
-
-            float3 f = HitInfo.material->BRDF(photon.wi, wo, HitInfo.N);
-            L += f * photon.flux;
+       const float3 normal = normalize(HitInfo.N);
+       if (dot(normal, normalize(wo)) <= 0.0f) {
+           return float3(0.0f);
        }
+       const float3 flux = photonMap.sumFlux(HitInfo.P, radius, normal);
+       float3 L = (HitInfo.material->Kd / PI) * flux;
        L /= (numPhotons * PI * radius * radius);
        return L;
     }
@@ -152,8 +158,9 @@ public:
             for (int j = 0; j < globalHeight; ++j) {
                 for (int i = 0; i < globalWidth; ++i) {
 
-                    // Need to sample a ray for monte carlo
-                    Ray ray = scene.eyeRay(i, j);
+                    const float sampleX = float(i) + rng.next1D();
+                    const float sampleY = float(j) + rng.next1D();
+                    Ray ray = scene.eyeRay(sampleX, sampleY);
                     float3 weight = float3(1.0f, 1.0f, 1.0f);        // W in the paper. I use beta described in PBRT implementation 
                     float3 radiance = float3(0.0f, 0.0f, 0.0f);
                     

@@ -3,7 +3,7 @@
 #include "config.h"
 #include "rng.h"
 
-// ====== implement it in A2, if you want ======
+
 enum enumMaterialType {
 	MAT_LAMBERTIAN,
 	MAT_METAL,

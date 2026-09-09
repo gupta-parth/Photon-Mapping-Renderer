@@ -32,7 +32,6 @@ using namespace linalg::aliases;
 
 
 // window size and resolution
-// (do not make it too large - will be slow!)
 constexpr int globalWidth = 512;
 constexpr int globalHeight = 384;
 
@@ -59,4 +58,3 @@ constexpr float globalDepthMin = Epsilon; // for rasterization
 constexpr float globalDepthMax = 100.0f; // for rasterization
 constexpr float globalFilmSize = 0.032f; //for ray tracing
 const float globalDistanceToFilm = globalFilmSize / (2.0f * tan(globalFOV * DegToRad * 0.5f)); // for ray tracing
-

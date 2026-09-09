@@ -37,4 +37,10 @@ target_include_directories(test_photon_map PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/sr
 target_include_directories(test_photon_map PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include)
 target_include_directories(test_photon_map PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glew/include)
 
+add_executable(test_camera_rays
+        tests/test_camera_rays.cpp)
+
+target_include_directories(test_camera_rays PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(test_camera_rays PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include)
+target_include_directories(test_camera_rays PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glew/include)
 

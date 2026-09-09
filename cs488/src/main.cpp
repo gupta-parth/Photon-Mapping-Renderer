@@ -12,7 +12,7 @@ static void setupLightSource() {
 
 
 
-// ======== you probably don't need to modify below in A1 to A3 ========
+
 // loading .obj file from the command line arguments
 static TriangleMesh mesh;
 static void setupScene(int argc, const char* argv[]) {
@@ -41,7 +41,7 @@ int main(int argc, const char* argv[]) {
     globalScene.preCalc();
 
     // change camera stuff 
-    globalEye = float3(0.0f, 0.8f, 3.2f);
+    globalEye    = float3(0.0f, 0.8f, 3.2f);
     globalLookat = float3(0.0f, 0.8f, 0.0f);
 
     globalViewDir = normalize(globalLookat - globalEye);
@@ -55,5 +55,5 @@ int main(int argc, const char* argv[]) {
     sppm.render(globalScene, FrameBuffer);
 
     //globalScene.Raytrace();
-    FrameBuffer.save("cornell-water-50.png");
+    FrameBuffer.save("cornell-water-anti-aliased.png");
 }
