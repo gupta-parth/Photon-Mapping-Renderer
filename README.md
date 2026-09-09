@@ -1,11 +1,11 @@
 # Progressive photon mapping
 
 # Description
-In this project, we extended our basic ray tracer from Assignment 2 to do global illumination using the progressive photon mapping technique of Knaus and Zwicker. The program renders images offline and is fast due to the parallelization of the ray tracing passes. 
+In this project, we created a ray tracer from scratch to do global illumination using the progressive photon mapping technique of Knaus and Zwicker. The program renders images offline and is fast due to the parallelization of the ray tracing passes. 
 
 I first tried to implement standard photon mapping to make the task easier but I found it to be still a lot of work. So instead I followed the approach in Section 16.2 of PBRT 3. This change halfway unfortunately led to a lot of wasted time. 
 
-The ```renders``` folders contains the images that were used during the demo. Also, the photons are color-coded in ```cornellbox-original-photon-bounce-overlay.png```: red photon is a direct diffuse hit, green is second hit, and cyan is third or later hit. 
+The ```renders``` folders contains the images that were used during the demo. Also, the photons are color-coded in ```photon_overlay.png```: red photon is a direct diffuse hit, green is second hit, and cyan is third or later hit. 
 
 # Compilation
 
